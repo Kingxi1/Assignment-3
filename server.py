@@ -44,6 +44,43 @@ class TupleSpace:
           self.stats['total_gets'] += 1
           self.stats['total_operations'] += 1
           return True,"OK ({}, {})removed".format(key,value)
-    
-
+        
+        
+        """
+         Calculate and return statistics about the tuple space.
+         Returns:
+        dict: A dictionary containing the following statistics:
+            - tuple_count: Number of tuples in the space
+            - avg_tuple_size: Average size of tuples (key + value)
+            - avg_key_size: Average size of keys
+            - avg_value_size: Average size of values
+            - total_clients: Total number of connected clients
+            - total_operations: Total number of operations performed
+            - total_reads: Total number of READ operations
+            - total_gets: Total number of GET operations
+            - total_puts: Total number of PUT operations
+            - total_errors: Total number of errors encountered
+        """
+      
+    def get_stats(self):
+        with self.lock:    # Ensure thread safety
+          # If tuple space is empty, return zero statistics
+          if not self.tuples:
+             return {
+                'tuple_count': 0,
+                'avg_tuple_size': 0,
+                'avg_key_size':0,
+                'avg_value_size':0,
+                **self.stats     # Include other statistics
+             }
+          key_sizes = [len(k) for k in self.tuples.keys()]
+          value_sizes = [len(v) for v in self.tuples.values()]
+          tuple_sizes = [k + v  for k, v in zip(key_sizes,value_sizes)]
+          return {
+                'tuple_count': len(self.tuples),
+                'avg_tuple_size': sum(tuple_sizes) / len(tuple_sizes),
+                'avg_key_size': sum(key_sizes) / len(key_sizes),
+                'avg_value_size': sum(value_sizes) / len(value_sizes),
+                **self.stats
+          }
     
