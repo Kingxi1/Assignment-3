@@ -3,7 +3,6 @@ import threading
 import time
 import sys
 
-
 class TupleSpace:
     def __init__(self):
         self.lock = threading.Lock()        # thread synchronization
@@ -18,3 +17,13 @@ class TupleSpace:
         }
 
     def put(self, key, value):
+        with self.lock:
+          if key in self.tuples:
+              self.stats['total_errors'] += 1
+              return False,"ERR {} aleady exists".format(key)
+          self.tuples[key] = value
+          self.stats['total_puts'] += 1
+          self.stats['total_operations'] += 1
+          return True,"OK ({}, {}) added".format(key,value)  
+
+    
