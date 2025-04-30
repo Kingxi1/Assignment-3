@@ -3,6 +3,7 @@ import threading
 import time
 import sys
 
+
 class TupleSpace:
     def __init__(self):
         self.lock = threading.Lock()        # thread synchronization
@@ -83,4 +84,35 @@ class TupleSpace:
                 'avg_value_size': sum(value_sizes) / len(value_sizes),
                 **self.stats
           }
+
+class Server:
+    def __init__(self, port):
+        self.tuples_space = TupleSpace()
+        self.port = port
+        self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.server_socket.bind(('localhost', self.port))
+        self.server_socket.listen(5)
+        
+        # 启动统计信息显示线程
+        self.stats_thread = threading.Thread(target=self.display_stats)
+        self.stats_thread.daemon = True
+        self.stats_thread.start()
+
+        def display_stats(self):
+            while True:
+                time.sleep(10)                                 # Display stats every 10 seconds
+                stats = self.tuples_space.get_stats()
+                print("\n=== Server Statistics ===")
+                print(f"Tuple count: {stats['tuple_count']}")
+                print(f"Average tuple size: {stats['avg_tuple_size']:.2f}")
+                print(f"Average key size: {stats['avg_key_size']:.2f}")
+                print(f"Average value size: {stats['avg_value_size']:.2f}")
+                print(f"Total clients: {stats['total_clients']}")
+                print(f"Total operations: {stats['total_operations']}")
+                print(f"READ operations: {stats['total_reads']}")
+                print(f"GET operations: {stats['total_gets']}")
+                print(f"PUT operations: {stats['total_puts']}")
+                print(f"Total errors: {stats['total_errors']}")
+                print("=======================\n")
+
     
