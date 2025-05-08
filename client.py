@@ -3,7 +3,7 @@ import sys
 
 
 class Client:
-    def __init__(self, hostname, port):
+    def __init__(self, hostname, port, request_file):
         """Initialize the client with server details and request file"""
         self.host = hostname
         self.port = port
@@ -79,6 +79,31 @@ class Client:
         except Exception as e:
             print(f"Error processing request: {e}")
             return False
-        
-
     
+    def process_file(self):
+        """Process requests from the input file"""
+        try:
+            with open(self.request_file, 'r') as f:
+                for line in f:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    # Validate key-value size for PUT commands
+                    if line.startswith("PUT"):
+                        _, key, value = line.split(" ", 2)
+                        if len(key) + len(value) > 970:
+                            print(f"Key-value pair too large: {line}")
+                            continue
+                    
+                    if not self.send_request(line):
+                        break
+
+        except FileNotFoundError:
+            print(f"Request file not found: {self.request_file}")
+        except Exception as e:
+            print(f"Error processing file: {e}")
+        finally:
+            if self.socket:
+                self.socket.close()
+
