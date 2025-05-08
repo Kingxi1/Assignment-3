@@ -47,9 +47,38 @@ class Client:
             print(f"Error formatting request: {e}")
             return None
 
-    def send(self, message):
-        self.sock.sendall(message.encode())
+    def send_request(self, request):
+        """Send a formatted request to the server and handle response"""
+        try:
+            msg = self._format_request(request)
+            if not msg:
+                return False
 
-    def receive(self):
-        return self.sock.recv(1024).decode()
+            # send the request
+            self.socket.send(msg.encode())
+
+            # receive the response
+            response = self.socket.recv(1024).decode()
+            if not response:
+                print("Server closed the connection")
+                return False
+
+            # parse the response
+            msg_len = int(response[:3])
+            response_content = response[3:]
+
+            # check if the response is valid
+            if len(response_content) == msg_len:
+                print(f"{request}: {response_content}")
+                return True
+
+            else:
+                print(f"Invalid response: {response}")
+                return False
+
+        except Exception as e:
+            print(f"Error processing request: {e}")
+            return False
+        
+
     
