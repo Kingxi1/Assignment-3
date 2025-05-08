@@ -107,3 +107,25 @@ class Client:
             if self.socket:
                 self.socket.close()
 
+def main():
+    if len(sys.argv) != 4:
+        print("使用方法: python client.py <hostname> <port> <request_file>")
+        sys.exit(1)
+
+    hostname = sys.argv[1]
+    try:
+        port = int(sys.argv[2])
+        if not (50000 <= port <= 59999):
+            raise ValueError("端口号必须在50000-59999之间")
+    except ValueError as e:
+        print(f"错误: {e}")
+        sys.exit(1)
+
+    request_file = sys.argv[3]
+
+    client = Client(hostname, port, request_file)
+    client.connect()
+    client.process_file()
+
+if __name__ == "__main__":
+    main()
