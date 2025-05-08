@@ -2,6 +2,8 @@ import socket
 import threading
 import time
 import sys
+from collections import defaultdict
+import statistics
 
 
 class TupleSpace:
@@ -93,7 +95,7 @@ class Server:
         self.server_socket.bind(('localhost', self.port))
         self.server_socket.listen(5)
         
-        # 启动统计信息显示线程
+        # Start a thread to display statistics
         self.stats_thread = threading.Thread(target=self.display_stats)
         self.stats_thread.daemon = True
         self.stats_thread.start()
@@ -114,5 +116,72 @@ class Server:
                 print(f"PUT operations: {stats['total_puts']}")
                 print(f"Total errors: {stats['total_errors']}")
                 print("=======================\n")
-
     
+    def handle_client(self, client_socket, addr):
+        self.tuple_space.stats['total_clients'] += 1
+        print(f"New client connected: {addr}")
+
+        try:
+            while True:
+                # Receive message from client
+                data = client_socket.recv(1024).decode()
+                if not data:
+                    break
+                # Process the message
+                msg_len = int(data[:3])
+                cmd = data[3]
+                content = data[4:]
+
+                #process the request
+                if cmd == 'P':  # PUT
+                    key, value = content.split(' ', 1)
+                    success, response = self.tuple_space.put(key, value)
+                elif cmd == 'R':  # READ
+                    key = content
+                    success, response = self.tuple_space.read(key)
+                elif cmd == 'G':  # GET
+                    key = content
+                    success, response = self.tuple_space.get(key)
+                else:
+                    response = "ERR invalid command"
+
+                # Send response 
+                response = f"{len(response):03d}{response}"
+                client_socket.send(response.encode())
+
+        except Exception as e:
+            print(f"An error occurred while handling client {addr}: {e}")
+        finally:
+            client_socket.close()
+            print(f"Client {addr} disconnected")
+    def start(self):
+        print(f"Server started on port {self.port}")
+        try:
+            while True:
+                client_socket, addr = self.server_socket.accept()
+                client_thread = threading.Thread(
+                    target=self.handle_client,
+                    args=(client_socket, addr)
+                )
+                client_thread.daemon = True
+                client_thread.start()
+        except KeyboardInterrupt:
+            print("\nServer is shutting down")
+        finally:
+            self.server_socket.close()
+
+if __name__ == "__main__":
+    if len(sys.argv) != 2:
+        print("使用方法: python server.py <port>")
+        sys.exit(1)
+    
+    try:
+        port = int(sys.argv[1])
+        if not (50000 <= port <= 59999):
+            raise ValueError("端口号必须在50000-59999之间")
+    except ValueError as e:
+        print(f"错误: {e}")
+        sys.exit(1)
+
+    server = Server(port)
+    server.start() 
